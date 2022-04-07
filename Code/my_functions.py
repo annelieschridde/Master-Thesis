@@ -14,6 +14,8 @@ import seaborn as sns
 import re
 import spacy
 import csv
+import pickle
+import demoji
 
 
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -33,6 +35,124 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import Binarizer
 from gensim.corpora import Dictionary
 from gensim.models import TfidfModel
+import en_core_web_sm
 
 # Metrics
 from scipy.spatial.distance import cosine
+
+#Data List amazon
+#data_list = ["https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Wireless_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Watches_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Video_Games_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Video_DVD_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Video_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Toys_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Tools_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Sports_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Software_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Shoes_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Pet_Products_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Personal_Care_Appliances_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_PC_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Outdoors_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Office_Products_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Musical_Instruments_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Music_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Mobile_Electronics_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Mobile_Apps_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Major_Appliances_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Luggage_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Lawn_and_Garden_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Kitchen_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Jewelry_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Home_Improvement_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Home_Entertainment_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Home_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Health_Personal_Care_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Grocery_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Gift_Card_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Furniture_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Electronics_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Video_Games_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Video_Download_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Software_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Music_Purchase_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Ebook_Purchase_v1_01.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Digital_Ebook_Purchase_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Camera_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Books_v1_02.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Books_v1_01.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Books_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Beauty_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Baby_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Automotive_v1_00.tsv.gz",
+#"https://s3.amazonaws.com/amazon-reviews-pds/tsv/amazon_reviews_us_Apparel_v1_00.tsv.gz"] 
+
+
+#Combining Data 
+
+def combine_files(file_path, number_of_rows:int = 100):
+    list_of_org_files = list(os.listdir(path=file_path))
+    combined_files = []
+    for file in list_of_org_files:
+        print("Is reading " + file + "...")
+        data = pd.read_csv(file_path + "/" + file, sep="\t", compression = 'gzip', nrows=number_of_rows)
+        combined_files.append(data)
+        pd.concat(combined_files)
+        print("File added!")
+
+
+def clean_complete(review):
+    """
+    review: pandas series
+    prepares reviews complete cleaning for further lemmatization and dering embeddings
+    """
+    pat = r"(\\n)|(@\w*)|((www\.[^\s]+)|(https?://[^\s]+))"
+    review =  review.str.replace(pat, '')
+
+    #remove repeated charachters
+    
+    #replace emoticons with words
+    #SMILEYS = {":-(":"sad", ":‑)":"smiley", ":-P":"playfullness", ":-/":'confused'}
+
+    review =  review.str.replace(r':-\)', ' smile')
+    review =  review.str.replace(r':-\(', ' sad')
+    review =  review.str.replace(r':-\/', ' confused')
+    review =  review.str.replace(r':-P', ' playfullness')
+
+    #delete \xa
+    review =  review.str.replace('\xa0', '')
+
+    review =  review.str.replace('&amp', '')
+    review =  review.str.replace('\n', '')
+    review =  review.str.replace('"', '')
+    review =  review.str.replace('ℐℓ٥ﻻﻉ√٥υ', '')
+    review =  review.str.replace(r'£|\u200d|—', '')
+    
+    #to lower case
+    review =  review.str.lower()
+
+    #covert hashtags to the normal text
+    review =  review.str.replace(r'#([^\s]+)', r'\1')
+
+    #delete numbers
+    review = [strip_numeric(c) for c in   review]
+
+    #replacing emojies with descriptions '❤️-> red heart'
+    review = [demoji.replace_with_desc(c, ' ') for c in   review]
+
+    #replacing emojies with ''
+    review = [demoji.replace(c, ' ') for c in review]
+
+    #delete punctuation
+    review = [strip_punctuation(c) for c in   review]
+
+    #remove stop words
+    review = [remove_stopwords(c) for c in    review]
+
+    #remove short words
+    review = [strip_short(c) for c in review]
+
+    #remove mult whitespaces
+    review = [strip_multiple_whitespaces(c) for c in  review]
+    return  review
