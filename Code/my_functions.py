@@ -18,14 +18,22 @@ import pickle
 import demoji
 
 
+
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 # NLTK
 import nltk
 nltk.download('stopwords')
 nltk.download('vader_lexicon')
+nltk.download('punkt')
+nltk.download('wordnet')
 from nltk.tokenize import word_tokenize
 nltk.download('punkt')
+from nltk.corpus import stopwords
+from nltk.tokenize import RegexpTokenizer
+from nltk import word_tokenize
+import re
+tokenizer = RegexpTokenizer(r'\b\w{3,}\b')
 
 # Gensim: Preprocessing and Modelling
 from gensim.parsing.preprocessing import STOPWORDS, strip_tags, strip_numeric, strip_punctuation, strip_multiple_whitespaces, remove_stopwords, strip_short, stem_text
@@ -36,6 +44,10 @@ from sklearn.preprocessing import Binarizer
 from gensim.corpora import Dictionary
 from gensim.models import TfidfModel
 import en_core_web_sm
+
+# Other Preprocessing Modules
+from autocorrect import Speller
+import contractions
 
 # Metrics
 from scipy.spatial.distance import cosine
@@ -102,57 +114,3 @@ def combine_files(file_path, number_of_rows:int = 100):
         print("File added!")
 
 
-def clean_complete(review):
-    """
-    review: pandas series
-    prepares reviews complete cleaning for further lemmatization and dering embeddings
-    """
-    pat = r"(\\n)|(@\w*)|((www\.[^\s]+)|(https?://[^\s]+))"
-    review =  review.str.replace(pat, '')
-
-    #remove repeated charachters
-    
-    #replace emoticons with words
-    #SMILEYS = {":-(":"sad", ":‑)":"smiley", ":-P":"playfullness", ":-/":'confused'}
-
-    review =  review.str.replace(r':-\)', ' smile')
-    review =  review.str.replace(r':-\(', ' sad')
-    review =  review.str.replace(r':-\/', ' confused')
-    review =  review.str.replace(r':-P', ' playfullness')
-
-    #delete \xa
-    review =  review.str.replace('\xa0', '')
-
-    review =  review.str.replace('&amp', '')
-    review =  review.str.replace('\n', '')
-    review =  review.str.replace('"', '')
-    review =  review.str.replace('ℐℓ٥ﻻﻉ√٥υ', '')
-    review =  review.str.replace(r'£|\u200d|—', '')
-    
-    #to lower case
-    review =  review.str.lower()
-
-    #covert hashtags to the normal text
-    review =  review.str.replace(r'#([^\s]+)', r'\1')
-
-    #delete numbers
-    review = [strip_numeric(c) for c in   review]
-
-    #replacing emojies with descriptions '❤️-> red heart'
-    review = [demoji.replace_with_desc(c, ' ') for c in   review]
-
-    #replacing emojies with ''
-    review = [demoji.replace(c, ' ') for c in review]
-
-    #delete punctuation
-    review = [strip_punctuation(c) for c in   review]
-
-    #remove stop words
-    review = [remove_stopwords(c) for c in    review]
-
-    #remove short words
-    review = [strip_short(c) for c in review]
-
-    #remove mult whitespaces
-    review = [strip_multiple_whitespaces(c) for c in  review]
-    return  review
